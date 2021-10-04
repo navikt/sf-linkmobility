@@ -1,0 +1,14 @@
+openapi: 3.0.1
+info:
+  title: Api Linkmobility
+  version: "1.0"
+servers:
+  - url: https://linkmobility.dev.nav.no
+paths:
+  /ping:
+    get:
+      tags:
+        - Linkmobility
+      responses:
+        200:
+          description: OK
