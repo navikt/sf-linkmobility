@@ -45,7 +45,7 @@ spec:
     - name: KTOR_ENV
       value: dev
     - name: MS_BETWEEN_WORK
-      value: '600000'
+      value: 60000
     - name: VAULT_INSTANCE
       value: PREPROD
     - name: SF_INSTANCE
