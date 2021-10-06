@@ -59,8 +59,12 @@ fun Application.module(testing: Boolean = false) {
         get("/ping") {
             log.info { "Call to Ping" }
 
-            log.info { "Req information request: ${call.request}, headers: ${call.request.headers}, orig: ${call.request.origin}, orig remoteHost: ${call.request.origin.remoteHost}, orig host: ${call.request.origin.host}, orig pory: ${call.request.origin.port}, orig uri: ${call.request.origin.uri}" }
-            call.respond(HttpStatusCode.OK, "Successfully pinged!")
+            val headers = call.request.headers.entries().map { "${it.key} : ${it.value}" }.joinToString("\n")
+
+            val origin = "${call.request.origin.uri}, ${call.request.origin.host}, ${call.request.origin.port}, ${call.request.origin.method}, ${call.request.origin.remoteHost}, ${call.request.origin.scheme}"
+
+            // log.info { "Req information request: ${call.request}, headers: ${call.request.headers}, orig: ${call.request.origin}, orig remoteHost: ${call.request.origin.remoteHost}, orig host: ${call.request.origin.host}, orig pory: ${call.request.origin.port}, orig uri: ${call.request.origin.uri}" }
+            call.respond(HttpStatusCode.OK, "Successfully pinged!\n$headers\n\n$origin")
             /*
             if (containsValidToken(call.request)) {
                 log.info { "Authorized call to Arkiv" }
