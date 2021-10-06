@@ -33,11 +33,14 @@ spec:
     path: /internal/prometheus
   ingresses:
     - "https://linkmobility.ekstern.dev.nav.no"
+    - "https://linkmobility.intern.dev.nav.no"
   accessPolicy:
     outbound:
       external:
         - host: test.salesforce.com
         - host: navdialog--preprod.my.salesforce.com
+  envFrom:
+    - secret: sf-linkmobility
   env:
     - name: KTOR_ENV
       value: dev

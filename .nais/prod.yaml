@@ -38,6 +38,8 @@ spec:
       external:
         - host: login.salesforce.com
         - host: navdialog.my.salesforce.com
+  envFrom:
+    - secret: sf-linkmobility
   env:
     - name: KTOR_ENV
       value: production

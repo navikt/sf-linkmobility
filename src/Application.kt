@@ -37,6 +37,9 @@ private val log = KotlinLogging.logger { }
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
 
+    val username = System.getenv("username")
+    val password = System.getenv("password")
+
     install(ContentNegotiation) {
         gson {
             setPrettyPrinting()
@@ -47,7 +50,7 @@ fun Application.module(testing: Boolean = false) {
         basic("auth-basic") {
             realm = "Access to the 'api/' path"
             validate { credentials ->
-                if (credentials.name == "tryout" && credentials.password == "foobar") {
+                if (credentials.name == username && credentials.password == password) {
                     UserIdPrincipal(credentials.name)
                 } else {
                     null
@@ -76,15 +79,14 @@ fun Application.module(testing: Boolean = false) {
         }
         authenticate("auth-basic") {
             get("api/ping") {
-
-                log.info { "Authorized call to Ping" }
                 val headers = call.request.headers.entries().map { "${it.key} : ${it.value}" }.joinToString("\n")
 
                 val origin =
                     "${call.request.origin.uri}, ${call.request.origin.host}, ${call.request.origin.port}, ${call.request.origin.method}, ${call.request.origin.remoteHost}, ${call.request.origin.scheme}"
 
+                log.info { "Authorized call to Ping. Header info:\n$headers\n\n$origin" }
                 // log.info { "Req information request: ${call.request}, headers: ${call.request.headers}, orig: ${call.request.origin}, orig remoteHost: ${call.request.origin.remoteHost}, orig host: ${call.request.origin.host}, orig pory: ${call.request.origin.port}, orig uri: ${call.request.origin.uri}" }
-                call.respond(HttpStatusCode.OK, "Successfully pinged!\n$headers\n\n$origin")
+                call.respond(HttpStatusCode.OK, "Successfully pinged!")
                 /*
             if (containsValidToken(call.request)) {
                 log.info { "Authorized call to Arkiv" }
