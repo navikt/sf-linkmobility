@@ -3,6 +3,10 @@ package no.nav.sf.linkmobility
 import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.application.install
+import io.ktor.auth.Authentication
+import io.ktor.auth.UserIdPrincipal
+import io.ktor.auth.authenticate
+import io.ktor.auth.basic
 import io.ktor.features.ContentNegotiation
 import io.ktor.features.origin
 import io.ktor.gson.gson
@@ -26,6 +30,7 @@ data class ApplicationState(
     var running: Boolean = true,
     var initialized: Boolean = false
 )
+
 private val log = KotlinLogging.logger { }
 
 @Suppress("unused") // Referenced in application.conf
@@ -35,6 +40,19 @@ fun Application.module(testing: Boolean = false) {
     install(ContentNegotiation) {
         gson {
             setPrettyPrinting()
+        }
+    }
+
+    install(Authentication) {
+        basic("auth-basic") {
+            realm = "Access to the 'api/' path"
+            validate { credentials ->
+                if (credentials.name == "tryout" && credentials.password == "foobar") {
+                    UserIdPrincipal(credentials.name)
+                } else {
+                    null
+                }
+            }
         }
     }
 
@@ -56,16 +74,18 @@ fun Application.module(testing: Boolean = false) {
                 TextFormat.write004(this, collectorRegistry.filteredMetricFamilySamples(names))
             }
         }
-        get("/ping") {
-            log.info { "Call to Ping" }
+        authenticate("auth-basic") {
+            get("api/ping") {
 
-            val headers = call.request.headers.entries().map { "${it.key} : ${it.value}" }.joinToString("\n")
+                log.info { "Authorized call to Ping" }
+                val headers = call.request.headers.entries().map { "${it.key} : ${it.value}" }.joinToString("\n")
 
-            val origin = "${call.request.origin.uri}, ${call.request.origin.host}, ${call.request.origin.port}, ${call.request.origin.method}, ${call.request.origin.remoteHost}, ${call.request.origin.scheme}"
+                val origin =
+                    "${call.request.origin.uri}, ${call.request.origin.host}, ${call.request.origin.port}, ${call.request.origin.method}, ${call.request.origin.remoteHost}, ${call.request.origin.scheme}"
 
-            // log.info { "Req information request: ${call.request}, headers: ${call.request.headers}, orig: ${call.request.origin}, orig remoteHost: ${call.request.origin.remoteHost}, orig host: ${call.request.origin.host}, orig pory: ${call.request.origin.port}, orig uri: ${call.request.origin.uri}" }
-            call.respond(HttpStatusCode.OK, "Successfully pinged!\n$headers\n\n$origin")
-            /*
+                // log.info { "Req information request: ${call.request}, headers: ${call.request.headers}, orig: ${call.request.origin}, orig remoteHost: ${call.request.origin.remoteHost}, orig host: ${call.request.origin.host}, orig pory: ${call.request.origin.port}, orig uri: ${call.request.origin.uri}" }
+                call.respond(HttpStatusCode.OK, "Successfully pinged!\n$headers\n\n$origin")
+                /*
             if (containsValidToken(call.request)) {
                 log.info { "Authorized call to Arkiv" }
                 val requestBody = call.receive<Array<ArkivModel>>()
@@ -75,6 +95,7 @@ fun Application.module(testing: Boolean = false) {
                 call.respond(HttpStatusCode.Unauthorized)
             }
              */
+            }
         }
     }
 }

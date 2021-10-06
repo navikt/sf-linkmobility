@@ -5,7 +5,7 @@ info:
 servers:
   - url: https://linkmobility.dev.nav.no
 paths:
-  /ping:
+  /api/ping:
     get:
       tags:
         - Linkmobility
