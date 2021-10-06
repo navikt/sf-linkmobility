@@ -3,7 +3,7 @@ name: Build, push, and deploy
 on: [push, pull_request]
 
 env:
-  IMAGE: docker.pkg.github.com/${{ github.repository }}/sf-arkiv:${{ github.sha }}
+  IMAGE: docker.pkg.github.com/${{ github.repository }}/sf-linkmobility:${{ github.sha }}
   ORG_GRADLE_PROJECT_githubPassword: ${{ secrets.GITHUB_TOKEN }}
 jobs:
   build:
