@@ -4,6 +4,13 @@ info:
   version: "1.0"
 servers:
   - url: https://linkmobility.dev.nav.no
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+security:
+  - basicAuth: []
 paths:
   /api/ping:
     get:
@@ -12,3 +19,5 @@ paths:
       responses:
         200:
           description: OK
+        401:
+          description: Unauthorized
