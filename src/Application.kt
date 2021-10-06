@@ -4,6 +4,7 @@ import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.features.ContentNegotiation
+import io.ktor.features.origin
 import io.ktor.gson.gson
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -57,7 +58,9 @@ fun Application.module(testing: Boolean = false) {
         }
         get("/ping") {
             log.info { "Call to Ping" }
-            call.respond(HttpStatusCode.Created, "Successfully pinged!")
+
+            log.info { "Req information request: ${call.request}, headers: ${call.request.headers}, orig: ${call.request.origin}, orig remoteHost: ${call.request.origin.remoteHost}, orig host: ${call.request.origin.host}, orig pory: ${call.request.origin.port}, orig uri: ${call.request.origin.uri}" }
+            call.respond(HttpStatusCode.OK, "Successfully pinged!")
             /*
             if (containsValidToken(call.request)) {
                 log.info { "Authorized call to Arkiv" }
