@@ -37,8 +37,8 @@ private val log = KotlinLogging.logger { }
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
 
-    val username = "usr" // System.getenv("username")
-    val password = "pwd" // System.getenv("password")
+    val username = System.getenv("username")
+    val password = System.getenv("password")
 
     install(ContentNegotiation) {
         gson {

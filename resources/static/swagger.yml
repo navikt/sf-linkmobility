@@ -3,8 +3,8 @@ info:
   title: Api Linkmobility
   version: "1.0"
 servers:
-  - url: https://linkmobility.intern.dev.nav.no
   - url: https://linkmobility.ekstern.dev.nav.no
+  - url: https://linkmobility.dev.intern.nav.no
 components:
   securitySchemes:
     basicAuth:
