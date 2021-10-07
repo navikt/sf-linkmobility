@@ -34,6 +34,7 @@ spec:
   ingresses:
     - "https://linkmobility.ekstern.dev.nav.no"
     - "https://linkmobility.intern.dev.nav.no"
+    - "https://linkmobility.dev.nav.no"
   accessPolicy:
     outbound:
       external:
