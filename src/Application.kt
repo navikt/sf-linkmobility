@@ -142,7 +142,7 @@ val tokenHost = System.getenv("SF_TOKENHOST")
 
 val SFClientID = System.getenv("SFClientID")
 val SFUsername = System.getenv("SFUsername")
-val keystoreB64 = System.getenv("KeystoreJKSB64")
+val keystoreB64 = System.getenv("keystoreJKSB64")
 val keystorePassword = System.getenv("KeystorePassword")
 val privateKeyAlias = System.getenv("PrivateKeyAlias")
 val privateKeyPassword = System.getenv("PrivateKeyPassword")
