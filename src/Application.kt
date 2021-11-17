@@ -9,6 +9,7 @@ import io.ktor.auth.UserIdPrincipal
 import io.ktor.auth.authenticate
 import io.ktor.auth.basic
 import io.ktor.client.HttpClient
+import io.ktor.client.engine.apache.Apache
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.statement.HttpStatement
 import io.ktor.client.statement.readBytes
@@ -152,7 +153,7 @@ val objectMapper: ObjectMapper = ObjectMapper()
 // val requestFactory = SimpleClientHttpRequestFactory()
 // Spring:
 // val restTemplate : RestTemplate
-val client = HttpClient()
+val client = HttpClient(Apache)
 
 suspend fun fetchAccessTokenAndInstanceUrl(): Pair<String, String> {
     val claim = JWTClaim(iss = SFClientID, aud = tokenHost, sub = SFUsername, exp = ((System.currentTimeMillis() / 1000) + 300).toString())
