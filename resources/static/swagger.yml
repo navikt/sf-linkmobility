@@ -17,6 +17,16 @@ paths:
     get:
       tags:
         - Linkmobility
+      security: []
+      responses:
+        200:
+          description: OK
+        401:
+          description: Unauthorized
+  /api/pingauth:
+    get:
+      tags:
+        - Linkmobility
       responses:
         200:
           description: OK
@@ -26,7 +36,6 @@ paths:
     post:
       tags:
         - Linkmobility
-      security: []
       requestBody:
         required: true
         content:
@@ -36,3 +45,5 @@ paths:
       responses:
         200:
           description: OK
+        401:
+          description: Unauthorized
