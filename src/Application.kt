@@ -91,18 +91,8 @@ fun Application.module(testing: Boolean = false) {
                 TextFormat.write004(this, collectorRegistry.filteredMetricFamilySamples(names))
             }
         }
-        get("api/ping") {
-            val headers = call.request.headers.entries().map { "${it.key} : ${it.value}" }.joinToString("\n")
-
-            val origin =
-                "${call.request.origin.uri}, ${call.request.origin.host}, ${call.request.origin.port}, ${call.request.origin.method}, ${call.request.origin.remoteHost}, ${call.request.origin.scheme}"
-
-            log.info { "Authorized call to Ping. Header info:\n$headers\n\n$origin" }
-            // log.info { "Req information request: ${call.request}, headers: ${call.request.headers}, orig: ${call.request.origin}, orig remoteHost: ${call.request.origin.remoteHost}, orig host: ${call.request.origin.host}, orig pory: ${call.request.origin.port}, orig uri: ${call.request.origin.uri}" }
-            call.respond(HttpStatusCode.OK, "Successfully pinged!")
-        }
         authenticate("auth-basic") {
-            get("api/pingAuth") {
+            get("api/ping") {
                 val headers = call.request.headers.entries().map { "${it.key} : ${it.value}" }.joinToString("\n")
 
                 val origin =
@@ -110,9 +100,9 @@ fun Application.module(testing: Boolean = false) {
 
                 log.info { "Authorized call to Ping. Header info:\n$headers\n\n$origin" }
                 // log.info { "Req information request: ${call.request}, headers: ${call.request.headers}, orig: ${call.request.origin}, orig remoteHost: ${call.request.origin.remoteHost}, orig host: ${call.request.origin.host}, orig pory: ${call.request.origin.port}, orig uri: ${call.request.origin.uri}" }
-                call.respond(HttpStatusCode.OK, "Successfully pinged auth!")
+                call.respond(HttpStatusCode.OK, "Successfully pinged!")
             }
-            post("api/registersms") {
+            post("api/sms") {
                 val accessTokenAndInstanceUrl = fetchAccessTokenAndInstanceUrl()
 
                 val body = call.receiveText()

@@ -17,22 +17,12 @@ paths:
     get:
       tags:
         - Linkmobility
-      security: []
       responses:
         200:
           description: OK
         401:
           description: Unauthorized
-  /api/pingauth:
-    get:
-      tags:
-        - Linkmobility
-      responses:
-        200:
-          description: OK
-        401:
-          description: Unauthorized
-  /api/registersms:
+  /api/sms:
     post:
       tags:
         - Linkmobility
