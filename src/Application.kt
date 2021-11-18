@@ -8,8 +8,6 @@ import io.ktor.auth.Authentication
 import io.ktor.auth.UserIdPrincipal
 import io.ktor.auth.authenticate
 import io.ktor.auth.basic
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.apache.Apache
 import io.ktor.features.ContentNegotiation
 import io.ktor.features.origin
 import io.ktor.gson.gson
@@ -27,7 +25,6 @@ import io.ktor.routing.post
 import io.ktor.routing.routing
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.exporter.common.TextFormat
-import java.net.URI
 import java.security.KeyStore
 import java.security.PrivateKey
 import kotlinx.coroutines.delay
@@ -36,12 +33,7 @@ import mu.KotlinLogging
 import no.nav.sf.library.AnEnvironment
 import no.nav.sf.library.EV_httpsProxy
 import no.nav.sf.library.supportProxy
-import org.apache.http.HttpHost
-import org.apache.http.client.config.CookieSpecs
-import org.apache.http.client.config.RequestConfig
-import org.apache.http.impl.client.HttpClients
 import org.http4k.client.ApacheClient
-import org.http4k.core.HttpHandler
 import org.http4k.core.Method
 import org.http4k.core.Status
 import token.TokenResponse
@@ -106,11 +98,14 @@ fun Application.module(testing: Boolean = false) {
 
             val uri = "${accessTokenAndInstanceUrl.second}/services/apexrest/receiveSMS"
 
-            val request = org.http4k.core.Request(Method.POST, "")
+            val request = org.http4k.core.Request(Method.POST, uri)
                 .header("Authorization", "Bearer ${accessTokenAndInstanceUrl.first}")
                 .body(body)
 
-            call.respond(HttpStatusCode.OK, "body: $body uri: $uri accesst: ${accessTokenAndInstanceUrl.first.subSequence(0,5)}...")
+            val response = httpClient(request)
+
+            val ktorStatus = if (response.status == Status.OK) HttpStatusCode.OK else HttpStatusCode.NotAcceptable
+            call.respond(ktorStatus, "Status: ${response.status} Body:${response.bodyString()}")
         }
         authenticate("auth-basic") {
             get("api/ping") {
@@ -122,40 +117,10 @@ fun Application.module(testing: Boolean = false) {
                 log.info { "Authorized call to Ping. Header info:\n$headers\n\n$origin" }
                 // log.info { "Req information request: ${call.request}, headers: ${call.request.headers}, orig: ${call.request.origin}, orig remoteHost: ${call.request.origin.remoteHost}, orig host: ${call.request.origin.host}, orig pory: ${call.request.origin.port}, orig uri: ${call.request.origin.uri}" }
                 call.respond(HttpStatusCode.OK, "Successfully pinged!")
-                /*
-            if (containsValidToken(call.request)) {
-                log.info { "Authorized call to Arkiv" }
-                val requestBody = call.receive<Array<ArkivModel>>()
-                call.respond(HttpStatusCode.Created, addArchive(requestBody))
-            } else {
-                log.info { "Arkiv call denied - missing valid token" }
-                call.respond(HttpStatusCode.Unauthorized)
-            }
-             */
             }
         }
     }
 }
-
-/*
-fun isAuthenticated(call: ApplicationCall): Boolean {
-    val auth = call.request.header(HttpHeaders.Authorization)
-
-    if (auth != null) {
-        return if (auth.startsWith("Bearer ")) {
-            val authToken = auth.replace("Bearer ", "")
-
-            // Use the auth to verify that auth token is valid with Azure AD
-            true
-        } else {
-            false
-        }
-    }
-
-    return false
-}
-
- */
 
 val tokenHost = System.getenv("SF_TOKENHOST")
 
@@ -168,34 +133,7 @@ val privateKeyPassword = System.getenv("PrivateKeyPassword")
 
 val objectMapper: ObjectMapper = ObjectMapper()
 
-// Spring:
-// val requestFactory = SimpleClientHttpRequestFactory()
-// Spring:
-// val restTemplate : RestTemplate
-val client = HttpClient(Apache)
-
 val httpClient = ApacheClient.supportProxy(AnEnvironment.getEnvOrDefault(EV_httpsProxy))
-
-fun ApacheClient.supportProxy(httpsProxy: String): HttpHandler = httpsProxy.let { p ->
-    when {
-        p.isEmpty() -> this()
-        else -> {
-            val up = URI(p)
-            this(
-                client =
-                HttpClients.custom()
-                    .setDefaultRequestConfig(
-                        RequestConfig.custom()
-                            .setProxy(HttpHost(up.host, up.port, up.scheme))
-                            .setRedirectsEnabled(false)
-                            .setCookieSpec(CookieSpecs.IGNORE_COOKIES)
-                            .build()
-                    )
-                    .build()
-            )
-        }
-    }
-}
 
 data class JWTClaim(
     val iss: String,
@@ -205,7 +143,6 @@ data class JWTClaim(
 )
 
 suspend fun fetchAccessTokenAndInstanceUrl(): Pair<String, String> {
-
     val claim = JWTClaim(
         iss = SFClientID,
         aud = tokenHost,
@@ -223,19 +160,6 @@ suspend fun fetchAccessTokenAndInstanceUrl(): Pair<String, String> {
     }.${objectMapper.writeValueAsString(claim).encodeB64UrlSafe()}"
     val fullClaimSignature = privateKey.sign(claimWithHeaderJsonUrlSafe.toByteArray())
 
-    /*
-    val headers = HttpHeaders()
-    headers.contentType = MediaType.APPLICATION_FORM_URLENCODED
-
-    val body : MultiValueMap<String, String> = LinkedMultiValueMap()
-    body.add("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer")
-    body.add("assertion", "$claimWithHeaderJsonUrlSafe.$fullClaimSignature")
-
-    val entity: HttpEntity<MultiValueMap<String, String>> = HttpEntity(body, headers)
-
-
-}
-*/
     val accessTokenRequest = org.http4k.core.Request(Method.POST, "$tokenHost/services/oauth2/token")
         .header("Content-Type", "application/x-www-form-urlencoded")
         .query("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer")
@@ -243,19 +167,6 @@ suspend fun fetchAccessTokenAndInstanceUrl(): Pair<String, String> {
 
     for (retry in 1..4) {
         try {
-
-                    /*
-            // val response: ResponseEntity<String> = restTemplate.exchange(tokenHost,
-            // HttpMethod.POST, entity, String::class.java)
-            val statement = client.submitForm<HttpStatement>(
-                url = tokenHost,
-                formParameters = Parameters.build {
-                    append("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer")
-                    append("assertion", "$claimWithHeaderJsonUrlSafe.$fullClaimSignature")
-                }
-            )
-
-                     */
             val response = httpClient(accessTokenRequest)
 
             // val response = statement.execute()
