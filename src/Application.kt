@@ -10,15 +10,11 @@ import io.ktor.auth.authenticate
 import io.ktor.auth.basic
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.apache.Apache
-import io.ktor.client.request.forms.submitForm
-import io.ktor.client.statement.HttpStatement
-import io.ktor.client.statement.readBytes
 import io.ktor.features.ContentNegotiation
 import io.ktor.features.origin
 import io.ktor.gson.gson
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.Parameters
 import io.ktor.http.content.defaultResource
 import io.ktor.http.content.resources
 import io.ktor.http.content.static
@@ -29,11 +25,25 @@ import io.ktor.routing.get
 import io.ktor.routing.routing
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.exporter.common.TextFormat
+import java.net.URI
 import java.security.KeyStore
 import java.security.PrivateKey
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
+import no.nav.sf.library.AnEnvironment
+import no.nav.sf.library.EV_httpsProxy
+import no.nav.sf.library.SFAccessToken
+import no.nav.sf.library.supportProxy
+import org.apache.http.HttpHost
+import org.apache.http.client.config.CookieSpecs
+import org.apache.http.client.config.RequestConfig
+import org.apache.http.impl.client.HttpClients
+import org.http4k.client.ApacheClient
+import org.http4k.core.HttpHandler
+import org.http4k.core.Method
+import org.http4k.core.Response
+import org.http4k.core.Status
 import token.TokenResponse
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
@@ -91,7 +101,14 @@ fun Application.module(testing: Boolean = false) {
         }
         get("api/registersms") {
             val res = fetchAccessTokenAndInstanceUrl()
-            call.respond(HttpStatusCode.OK, "first ${res.first} second ${res.second}")
+            val params =
+                "SFClientId : $SFClientID, SFUsername $SFUsername, privateKeyAlias $privateKeyAlias, privateKeyPassword $privateKeyPassword, keystorepassword $keystorePassword, start of keystore ${
+                    keystoreB64.subSequence(
+                        0,
+                        5
+                    )
+                }"
+            call.respond(HttpStatusCode.OK, "first ${res.first} second ${res.second}, params: $params")
         }
         authenticate("auth-basic") {
             get("api/ping") {
@@ -155,10 +172,53 @@ val objectMapper: ObjectMapper = ObjectMapper()
 // val restTemplate : RestTemplate
 val client = HttpClient(Apache)
 
+val httpClient = ApacheClient.supportProxy(AnEnvironment.getEnvOrDefault(EV_httpsProxy))
+
+fun ApacheClient.supportProxy(httpsProxy: String): HttpHandler = httpsProxy.let { p ->
+    when {
+        p.isEmpty() -> this()
+        else -> {
+            val up = URI(p)
+            this(
+                client =
+                HttpClients.custom()
+                    .setDefaultRequestConfig(
+                        RequestConfig.custom()
+                            .setProxy(HttpHost(up.host, up.port, up.scheme))
+                            .setRedirectsEnabled(false)
+                            .setCookieSpec(CookieSpecs.IGNORE_COOKIES)
+                            .build()
+                    )
+                    .build()
+            )
+        }
+    }
+}
+
+data class JWTClaim(
+    val iss: String,
+    val aud: String,
+    val sub: String,
+    val exp: String
+)
+
 suspend fun fetchAccessTokenAndInstanceUrl(): Pair<String, String> {
-    val claim = JWTClaim(iss = SFClientID, aud = tokenHost, sub = SFUsername, exp = ((System.currentTimeMillis() / 1000) + 300).toString())
-    val privateKey = PrivateKeyFromBase64Store(ksB64 = keystoreB64, ksPwd = keystorePassword, pkAlias = privateKeyAlias, pkPwd = privateKeyPassword)
-    val claimWithHeaderJsonUrlSafe = "${objectMapper.writeValueAsString(JWTClaimHeader("RS256")).encodeB64UrlSafe()}.${objectMapper.writeValueAsString(claim).encodeB64UrlSafe()}"
+
+    val claim = JWTClaim(
+        iss = SFClientID,
+        aud = tokenHost,
+        sub = SFUsername,
+        exp = ((System.currentTimeMillis() / 1000) + 300).toString()
+    )
+    val privateKey = PrivateKeyFromBase64Store(
+        ksB64 = keystoreB64,
+        ksPwd = keystorePassword,
+        pkAlias = privateKeyAlias,
+        pkPwd = privateKeyPassword
+    )
+    val claimWithHeaderJsonUrlSafe = "${
+        objectMapper.writeValueAsString(JWTClaimHeader("RS256")).encodeB64UrlSafe()
+    }.${objectMapper.writeValueAsString(claim).encodeB64UrlSafe()}"
     val fullClaimSignature = privateKey.sign(claimWithHeaderJsonUrlSafe.toByteArray())
 
     /*
@@ -170,12 +230,21 @@ suspend fun fetchAccessTokenAndInstanceUrl(): Pair<String, String> {
     body.add("assertion", "$claimWithHeaderJsonUrlSafe.$fullClaimSignature")
 
     val entity: HttpEntity<MultiValueMap<String, String>> = HttpEntity(body, headers)
+
+
+}
 */
+    val accessTokenRequest = org.http4k.core.Request(Method.POST, "$tokenHost/services/oauth2/token")
+        .header("Content-Type", "application/x-www-form-urlencoded")
+        .query("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer")
+        .query("assertion", "$claimWithHeaderJsonUrlSafe.$fullClaimSignature")
+
     for (retry in 1..4) {
         try {
-            // val response: ResponseEntity<String> = restTemplate.exchange(tokenHost,
-            //    HttpMethod.POST, entity, String::class.java)
 
+                    /*
+            // val response: ResponseEntity<String> = restTemplate.exchange(tokenHost,
+            // HttpMethod.POST, entity, String::class.java)
             val statement = client.submitForm<HttpStatement>(
                 url = tokenHost,
                 formParameters = Parameters.build {
@@ -184,10 +253,12 @@ suspend fun fetchAccessTokenAndInstanceUrl(): Pair<String, String> {
                 }
             )
 
-            val response = statement.execute()
+                     */
+            val response = httpClient(accessTokenRequest)
 
-            if (response.status == HttpStatusCode.OK) {
-                val accessTokenResponse = objectMapper.readValue(response.readBytes(), TokenResponse::class.java)!!
+            // val response = statement.execute()
+            if (response.status == Status.OK) {
+                val accessTokenResponse = objectMapper.readValue(response.bodyString(), TokenResponse::class.java)!!
                 return Pair(accessTokenResponse.access_token, accessTokenResponse.instance_url)
             }
         } catch (e: Exception) {
@@ -195,7 +266,17 @@ suspend fun fetchAccessTokenAndInstanceUrl(): Pair<String, String> {
             runBlocking { delay(retry * 1000L) }
         }
     }
-    return Pair("", "")
+    return Pair("No luck", "No luck")
+}
+
+private fun Response.parseAccessToken(): SFAccessToken = when (status) {
+    Status.OK -> SFAccessToken.fromJson(bodyString())
+    else -> {
+        // SalesforceClient.metrics.failedAccessTokenRequest.inc()
+        // Report error only after last retry
+        log.warn { "Failed access token request at parseAccessToken- ${status.description} ($status) "/*:  this.headers: ${this.headers} this: $this this.body: ${this.body}. Bodystring ${bodyString()}" */ }
+        SFAccessToken.Missing
+    }
 }
 
 fun PrivateKeyFromBase64Store(ksB64: String, ksPwd: String, pkAlias: String, pkPwd: String): PrivateKey {
@@ -205,23 +286,19 @@ fun PrivateKeyFromBase64Store(ksB64: String, ksPwd: String, pkAlias: String, pkP
 }
 
 fun PrivateKey.sign(data: ByteArray): String {
-    return this.let { java.security.Signature.getInstance("SHA256withRSA").apply {
-        initSign(it)
-        update(data)
-    }.run {
-        sign().encodeB64()
-    } }
+    return this.let {
+        java.security.Signature.getInstance("SHA256withRSA").apply {
+            initSign(it)
+            update(data)
+        }.run {
+            sign().encodeB64()
+        }
+    }
 }
-
-data class JWTClaim(
-    val iss: String,
-    val aud: String,
-    val sub: String,
-    val exp: String
-)
 
 data class JWTClaimHeader(val alg: String)
 
 fun ByteArray.encodeB64(): String = org.apache.commons.codec.binary.Base64.encodeBase64URLSafeString(this)
 fun String.decodeB64(): ByteArray = org.apache.commons.codec.binary.Base64.decodeBase64(this)
-fun String.encodeB64UrlSafe(): String = org.apache.commons.codec.binary.Base64.encodeBase64URLSafeString(this.toByteArray())
+fun String.encodeB64UrlSafe(): String =
+    org.apache.commons.codec.binary.Base64.encodeBase64URLSafeString(this.toByteArray())
