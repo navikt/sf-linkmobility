@@ -18,10 +18,12 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.defaultResource
 import io.ktor.http.content.resources
 import io.ktor.http.content.static
+import io.ktor.request.receiveText
 import io.ktor.response.respond
 import io.ktor.response.respondText
 import io.ktor.response.respondTextWriter
 import io.ktor.routing.get
+import io.ktor.routing.post
 import io.ktor.routing.routing
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.exporter.common.TextFormat
@@ -33,7 +35,6 @@ import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import no.nav.sf.library.AnEnvironment
 import no.nav.sf.library.EV_httpsProxy
-import no.nav.sf.library.SFAccessToken
 import no.nav.sf.library.supportProxy
 import org.apache.http.HttpHost
 import org.apache.http.client.config.CookieSpecs
@@ -42,7 +43,6 @@ import org.apache.http.impl.client.HttpClients
 import org.http4k.client.ApacheClient
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method
-import org.http4k.core.Response
 import org.http4k.core.Status
 import token.TokenResponse
 
@@ -99,16 +99,18 @@ fun Application.module(testing: Boolean = false) {
                 TextFormat.write004(this, collectorRegistry.filteredMetricFamilySamples(names))
             }
         }
-        get("api/registersms") {
-            val res = fetchAccessTokenAndInstanceUrl()
-            val params =
-                "SFClientId : $SFClientID, SFUsername $SFUsername, privateKeyAlias $privateKeyAlias, privateKeyPassword $privateKeyPassword, keystorepassword $keystorePassword, start of keystore ${
-                    keystoreB64.subSequence(
-                        0,
-                        5
-                    )
-                }"
-            call.respond(HttpStatusCode.OK, "first ${res.first} second ${res.second}, params: $params")
+        post("api/registersms") {
+            val accessTokenAndInstanceUrl = fetchAccessTokenAndInstanceUrl()
+
+            val body = call.receiveText()
+
+            val uri = "${accessTokenAndInstanceUrl.second}/services/apexrest/receiveSMS"
+
+            val request = org.http4k.core.Request(Method.POST, "")
+                .header("Authorization", "Bearer ${accessTokenAndInstanceUrl.first}")
+                .body(body)
+
+            call.respond(HttpStatusCode.OK, "body: $body uri: $uri accesst: ${accessTokenAndInstanceUrl.first.subSequence(0,5)}...")
         }
         authenticate("auth-basic") {
             get("api/ping") {
@@ -266,17 +268,7 @@ suspend fun fetchAccessTokenAndInstanceUrl(): Pair<String, String> {
             runBlocking { delay(retry * 1000L) }
         }
     }
-    return Pair("No luck", "No luck")
-}
-
-private fun Response.parseAccessToken(): SFAccessToken = when (status) {
-    Status.OK -> SFAccessToken.fromJson(bodyString())
-    else -> {
-        // SalesforceClient.metrics.failedAccessTokenRequest.inc()
-        // Report error only after last retry
-        log.warn { "Failed access token request at parseAccessToken- ${status.description} ($status) "/*:  this.headers: ${this.headers} this: $this this.body: ${this.body}. Bodystring ${bodyString()}" */ }
-        SFAccessToken.Missing
-    }
+    return Pair("", "")
 }
 
 fun PrivateKeyFromBase64Store(ksB64: String, ksPwd: String, pkAlias: String, pkPwd: String): PrivateKey {

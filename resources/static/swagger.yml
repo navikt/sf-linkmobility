@@ -23,10 +23,16 @@ paths:
         401:
           description: Unauthorized
   /api/registersms:
-    get:
+    post:
       tags:
         - Linkmobility
       security: []
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
       responses:
         200:
           description: OK
