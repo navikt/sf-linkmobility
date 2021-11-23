@@ -103,6 +103,12 @@ fun Application.module(testing: Boolean = false) {
                 call.respond(HttpStatusCode.OK, "Successfully pinged!")
             }
             post("api/sms") {
+                val headers = call.request.headers.entries().map { "${it.key} : ${it.value}" }.joinToString("\n")
+
+                val origin =
+                    "${call.request.origin.uri}, ${call.request.origin.host}, ${call.request.origin.port}, ${call.request.origin.method}, ${call.request.origin.remoteHost}, ${call.request.origin.scheme}"
+
+                log.info { "Authorized call to Sms. Header info:\n$headers\n\n$origin" }
                 val accessTokenAndInstanceUrl = fetchAccessTokenAndInstanceUrl()
 
                 val body = call.receiveText()
