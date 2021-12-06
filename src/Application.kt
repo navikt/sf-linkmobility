@@ -108,7 +108,7 @@ fun Application.module(testing: Boolean = false) {
                 val origin =
                     "${call.request.origin.uri}, ${call.request.origin.host}, ${call.request.origin.port}, ${call.request.origin.method}, ${call.request.origin.remoteHost}, ${call.request.origin.scheme}"
 
-                log.info { "Authorized call to Sms. Header info:\n$headers\n\n$origin" }
+                log.info { "Authorized call to Sms" }
                 val accessTokenAndInstanceUrl = fetchAccessTokenAndInstanceUrl()
 
                 val body = call.receiveText()
