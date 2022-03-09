@@ -1,4 +1,4 @@
-package token;
+package no.nav.sf.linkmobility.token;
 
 public class TokenResponse {
     private String access_token;
@@ -6,7 +6,7 @@ public class TokenResponse {
 
     @Override
     public String toString() {
-        return "TokenResponse{" +
+        return "no.nav.sf.linkmobility.token.TokenResponse{" +
                 "access_token='" + access_token + '\'' +
                 ", scope='" + scope + '\'' +
                 ", instance_url='" + instance_url + '\'' +

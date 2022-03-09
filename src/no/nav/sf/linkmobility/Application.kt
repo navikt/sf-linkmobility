@@ -33,10 +33,10 @@ import mu.KotlinLogging
 import no.nav.sf.library.AnEnvironment
 import no.nav.sf.library.EV_httpsProxy
 import no.nav.sf.library.supportProxy
+import no.nav.sf.linkmobility.token.TokenResponse
 import org.http4k.client.ApacheClient
 import org.http4k.core.Method
 import org.http4k.core.Status
-import token.TokenResponse
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -166,7 +166,7 @@ suspend fun fetchAccessTokenAndInstanceUrl(): Pair<String, String> {
     }.${objectMapper.writeValueAsString(claim).encodeB64UrlSafe()}"
     val fullClaimSignature = privateKey.sign(claimWithHeaderJsonUrlSafe.toByteArray())
 
-    val accessTokenRequest = org.http4k.core.Request(Method.POST, "$tokenHost/services/oauth2/token")
+    val accessTokenRequest = org.http4k.core.Request(Method.POST, "$tokenHost/services/oauth2/no.nav.sf.linkmobility.token")
         .header("Content-Type", "application/x-www-form-urlencoded")
         .query("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer")
         .query("assertion", "$claimWithHeaderJsonUrlSafe.$fullClaimSignature")
@@ -181,7 +181,7 @@ suspend fun fetchAccessTokenAndInstanceUrl(): Pair<String, String> {
                 return Pair(accessTokenResponse.access_token, accessTokenResponse.instance_url)
             }
         } catch (e: Exception) {
-            log.error("Attempt to fetch access token $retry of 3 failed by ${e.message} stack: ${e.printStackTrace()}}")
+            log.error("Attempt to fetch access no.nav.sf.linkmobility.token $retry of 3 failed by ${e.message} stack: ${e.printStackTrace()}}")
             runBlocking { delay(retry * 1000L) }
         }
     }

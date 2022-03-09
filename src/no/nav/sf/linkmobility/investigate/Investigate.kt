@@ -12,7 +12,7 @@ interface Investigate {
                 .ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS")
                 .withZone(ZoneOffset.systemDefault())
                 .format(Instant.now())
-            FileOutputStream("/tmp/investigate", append).bufferedWriter().use { writer ->
+            FileOutputStream("/tmp/no.nav.sf.linkmobility.investigate", append).bufferedWriter().use { writer ->
                 writer.write("$timeStamp : $text \n")
             }
         }

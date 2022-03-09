@@ -31,7 +31,7 @@ spec:
   prometheus:
     enabled: true
     path: /internal/prometheus
-  ingresses: # ekstern.dev.nav.no, ekstern.dev.nav.no, dev.intern.nav.no
+  ingresses: # ekstern.dev.nav.no, dev.intern.nav.no
     - "https://linkmobility.ekstern.dev.nav.no"
     - "https://linkmobility.dev.intern.nav.no"
   accessPolicy:
