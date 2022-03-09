@@ -103,6 +103,7 @@ fun Application.module(testing: Boolean = false) {
                 call.respond(HttpStatusCode.OK, "Successfully pinged!")
             }
             post("api/sms") {
+                workmetrics.requestCounterTotal.inc()
                 val headers = call.request.headers.entries().map { "${it.key} : ${it.value}" }.joinToString("\n")
 
                 val origin =
