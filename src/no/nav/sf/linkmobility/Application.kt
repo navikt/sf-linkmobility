@@ -78,9 +78,11 @@ fun Application.module(testing: Boolean = false) {
             defaultResource("static/index.html")
         }
         get("/internal/is_alive") {
+            workmetrics.requestCounterTotal.inc()
             call.respondText("I'm alive! :)")
         }
         get("/internal/is_ready") {
+            workmetrics.requestCounterTotal.inc()
             call.respondText("I'm ready! :)")
         }
         get("/internal/prometheus") {
