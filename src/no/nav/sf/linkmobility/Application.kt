@@ -11,7 +11,6 @@ import io.ktor.auth.basic
 import io.ktor.features.ContentNegotiation
 import io.ktor.features.origin
 import io.ktor.gson.gson
-import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.defaultResource
 import io.ktor.http.content.resources
@@ -19,12 +18,11 @@ import io.ktor.http.content.static
 import io.ktor.request.receiveText
 import io.ktor.response.respond
 import io.ktor.response.respondText
-import io.ktor.response.respondTextWriter
 import io.ktor.routing.get
 import io.ktor.routing.post
 import io.ktor.routing.routing
-import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.exporter.common.TextFormat
+import java.io.StringWriter
 import java.security.KeyStore
 import java.security.PrivateKey
 import kotlinx.coroutines.delay
@@ -32,6 +30,7 @@ import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import no.nav.sf.library.AnEnvironment
 import no.nav.sf.library.EV_httpsProxy
+import no.nav.sf.library.Metrics
 import no.nav.sf.library.supportProxy
 import no.nav.sf.linkmobility.token.TokenResponse
 import org.http4k.client.ApacheClient
@@ -85,11 +84,18 @@ fun Application.module(testing: Boolean = false) {
             call.respondText("I'm ready! :)")
         }
         get("/internal/prometheus") {
+            /*
             val collectorRegistry: CollectorRegistry = CollectorRegistry.defaultRegistry
             val names = call.request.queryParameters.getAll("name[]")?.toSet() ?: setOf()
             call.respondTextWriter(ContentType.parse(TextFormat.CONTENT_TYPE_004)) {
                 TextFormat.write004(this, collectorRegistry.filteredMetricFamilySamples(names))
             }
+             */
+            val result = StringWriter().let { str ->
+                TextFormat.write004(str, Metrics.cRegistry.metricFamilySamples())
+                str
+            }.toString()
+            call.respondText(result)
         }
         authenticate("auth-basic") {
             get("api/ping") {
