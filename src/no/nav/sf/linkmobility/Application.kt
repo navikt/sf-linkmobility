@@ -79,20 +79,13 @@ fun Application.module(testing: Boolean = false) {
         }
         get("/internal/is_alive") {
             workmetrics.requestCounterTotal.inc()
-            call.respondText("I'm alive! :)")
+            call.respondText("I'm alive!")
         }
         get("/internal/is_ready") {
             workmetrics.requestCounterTotal.inc()
-            call.respondText("I'm ready! :)")
+            call.respondText("I'm ready!")
         }
         get("/internal/prometheus") {
-            /*
-            val collectorRegistry: CollectorRegistry = CollectorRegistry.defaultRegistry
-            val names = call.request.queryParameters.getAll("name[]")?.toSet() ?: setOf()
-            call.respondTextWriter(ContentType.parse(TextFormat.CONTENT_TYPE_004)) {
-                TextFormat.write004(this, collectorRegistry.filteredMetricFamilySamples(names))
-            }
-             */
             val result = StringWriter().let { str ->
                 TextFormat.write004(str, Metrics.cRegistry.metricFamilySamples())
                 str
@@ -107,15 +100,10 @@ fun Application.module(testing: Boolean = false) {
                     "${call.request.origin.uri}, ${call.request.origin.host}, ${call.request.origin.port}, ${call.request.origin.method}, ${call.request.origin.remoteHost}, ${call.request.origin.scheme}"
 
                 log.info { "Authorized call to Ping. Header info:\n$headers\n\n$origin" }
-                // log.info { "Req information request: ${call.request}, headers: ${call.request.headers}, orig: ${call.request.origin}, orig remoteHost: ${call.request.origin.remoteHost}, orig host: ${call.request.origin.host}, orig pory: ${call.request.origin.port}, orig uri: ${call.request.origin.uri}" }
                 call.respond(HttpStatusCode.OK, "Successfully pinged!")
             }
             post("api/sms") {
                 workmetrics.requestCounterTotal.inc()
-                val headers = call.request.headers.entries().map { "${it.key} : ${it.value}" }.joinToString("\n")
-
-                val origin =
-                    "${call.request.origin.uri}, ${call.request.origin.host}, ${call.request.origin.port}, ${call.request.origin.method}, ${call.request.origin.remoteHost}, ${call.request.origin.scheme}"
 
                 log.info { "Authorized call to Sms" }
                 val accessTokenAndInstanceUrl = fetchAccessTokenAndInstanceUrl()
@@ -184,7 +172,6 @@ suspend fun fetchAccessTokenAndInstanceUrl(): Pair<String, String> {
         try {
             val response = httpClient(accessTokenRequest)
 
-            // val response = statement.execute()
             if (response.status == Status.OK) {
                 val accessTokenResponse = objectMapper.readValue(response.bodyString(), TokenResponse::class.java)!!
                 return Pair(accessTokenResponse.access_token, accessTokenResponse.instance_url)

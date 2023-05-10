@@ -38,7 +38,7 @@ repositories {
         url "http://packages.confluent.io/maven"
     }
 
-    ["maven-release", "crm-utilities"].each { repo ->
+    ["maven-release"].each { repo ->
         String token = System.getenv("GITHUB_TOKEN") ?: project.findProperty("githubPassword")
         if (!token) throw new NullPointerException("Missing no.nav.sf.linkmobility.token, you have to set GITHUB_TOKEN or githubPassword")
         maven {
@@ -52,12 +52,6 @@ repositories {
 }
 
 dependencies {
-    // <groupId>com.fasterxml.jackson</groupId>
-    //                <artifactId>jackson-bom</artifactId>
-    //                <version>2.11.3</version>
-    //ngroupId>com.fasterxml.jackson.core</groupId>
-    //            <artifactId>jackson-databind</artifactId>
-
     implementation "io.ktor:ktor-client-apache:$ktor_version"
 
     implementation "org.http4k:http4k-core:$http4k_version"
