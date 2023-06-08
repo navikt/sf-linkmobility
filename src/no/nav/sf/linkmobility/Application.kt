@@ -39,11 +39,6 @@ import org.http4k.core.Status
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
-data class ApplicationState(
-    var running: Boolean = true,
-    var initialized: Boolean = false
-)
-
 private val log = KotlinLogging.logger { }
 
 @Suppress("unused") // Referenced in application.conf

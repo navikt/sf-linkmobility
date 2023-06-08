@@ -6,7 +6,6 @@ import no.nav.security.token.support.core.configuration.IssuerProperties
 import no.nav.security.token.support.core.configuration.MultiIssuerConfiguration
 import no.nav.security.token.support.core.http.HttpRequest
 import no.nav.security.token.support.core.validation.JwtTokenValidationHandler
-import no.nav.sf.linkmobility.utils.Environment
 
 const val env_AZURE_APP_WELL_KNOWN_URL = "AZURE_APP_WELL_KNOWN_URL"
 const val env_AZURE_APP_CLIENT_ID = "AZURE_APP_CLIENT_ID"
@@ -16,8 +15,8 @@ const val claim_NAME = "name"
 val multiIssuerConfiguration = MultiIssuerConfiguration(
     mapOf(
         "azure" to IssuerProperties(
-            URL(Environment.getEnvOrDefault(env_AZURE_APP_WELL_KNOWN_URL, "http://")),
-            listOf(Environment.getEnvOrDefault(env_AZURE_APP_CLIENT_ID, ""))
+            URL(System.getenv(env_AZURE_APP_WELL_KNOWN_URL)),
+            listOf(System.getenv(env_AZURE_APP_CLIENT_ID))
         )
     )
 )
