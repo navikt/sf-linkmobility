@@ -1,11 +1,11 @@
 package no.nav.sf.linkmobility.token
 
 import io.ktor.request.ApplicationRequest
-import java.net.URL
 import no.nav.security.token.support.core.configuration.IssuerProperties
 import no.nav.security.token.support.core.configuration.MultiIssuerConfiguration
 import no.nav.security.token.support.core.http.HttpRequest
 import no.nav.security.token.support.core.validation.JwtTokenValidationHandler
+import java.net.URL
 
 const val env_AZURE_APP_WELL_KNOWN_URL = "AZURE_APP_WELL_KNOWN_URL"
 const val env_AZURE_APP_CLIENT_ID = "AZURE_APP_CLIENT_ID"

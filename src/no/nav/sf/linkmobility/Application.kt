@@ -22,9 +22,6 @@ import io.ktor.routing.get
 import io.ktor.routing.post
 import io.ktor.routing.routing
 import io.prometheus.client.exporter.common.TextFormat
-import java.io.StringWriter
-import java.security.KeyStore
-import java.security.PrivateKey
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
@@ -36,6 +33,9 @@ import no.nav.sf.linkmobility.token.TokenResponse
 import org.http4k.client.ApacheClient
 import org.http4k.core.Method
 import org.http4k.core.Status
+import java.io.StringWriter
+import java.security.KeyStore
+import java.security.PrivateKey
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -154,7 +154,7 @@ suspend fun fetchAccessTokenAndInstanceUrl(): Pair<String, String> {
         pkPwd = privateKeyPassword
     )
     val claimWithHeaderJsonUrlSafe = "${
-        objectMapper.writeValueAsString(JWTClaimHeader("RS256")).encodeB64UrlSafe()
+    objectMapper.writeValueAsString(JWTClaimHeader("RS256")).encodeB64UrlSafe()
     }.${objectMapper.writeValueAsString(claim).encodeB64UrlSafe()}"
     val fullClaimSignature = privateKey.sign(claimWithHeaderJsonUrlSafe.toByteArray())
 
