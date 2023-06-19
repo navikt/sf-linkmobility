@@ -9,7 +9,6 @@ import io.ktor.auth.UserIdPrincipal
 import io.ktor.auth.authenticate
 import io.ktor.auth.basic
 import io.ktor.features.ContentNegotiation
-import io.ktor.features.origin
 import io.ktor.gson.gson
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.defaultResource
@@ -73,11 +72,9 @@ fun Application.module(testing: Boolean = false) {
             defaultResource("static/index.html")
         }
         get("/internal/is_alive") {
-            workmetrics.requestCounterTotal.inc()
             call.respondText("I'm alive!")
         }
         get("/internal/is_ready") {
-            workmetrics.requestCounterTotal.inc()
             call.respondText("I'm ready!")
         }
         get("/internal/prometheus") {
@@ -89,12 +86,6 @@ fun Application.module(testing: Boolean = false) {
         }
         authenticate("auth-basic") {
             get("api/ping") {
-                val headers = call.request.headers.entries().map { "${it.key} : ${it.value}" }.joinToString("\n")
-
-                val origin =
-                    "${call.request.origin.uri}, ${call.request.origin.host}, ${call.request.origin.port}, ${call.request.origin.method}, ${call.request.origin.remoteHost}, ${call.request.origin.scheme}"
-
-                log.info { "Authorized call to Ping. Header info:\n$headers\n\n$origin" }
                 call.respond(HttpStatusCode.OK, "Successfully pinged!")
             }
             post("api/sms") {

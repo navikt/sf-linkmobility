@@ -20,7 +20,7 @@ apply plugin: 'kotlin'
 apply plugin: 'application'
 
 group 'no.nav.sf.linkmobility'
-version '0.0.1'
+version '1.0.0'
 mainClassName = "io.ktor.server.netty.EngineMain"
 
 sourceSets {
