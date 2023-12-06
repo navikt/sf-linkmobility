@@ -9,6 +9,10 @@ jobs:
   build:
     name: Build and push Docker container
     if: github.event_name != 'pull_request'
+    permissions:
+      contents: write
+      id-token: write
+      packages: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
