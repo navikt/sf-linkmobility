@@ -84,7 +84,7 @@ dependencies {
 
     implementation("com.bettercloud:vault-java-driver:3.1.0")
 
-    implementation("org.flywaydb:flyway-core:6.4.4")
+    implementation("org.flywaydb:flyway-core:10.2.0")
 
     implementation "io.ktor:ktor-gson:$ktor_version"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
