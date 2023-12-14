@@ -9,6 +9,7 @@ plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.6.0'
     id 'com.github.ben-manes.versions' version '0.50.0'
     id 'com.github.johnrengelman.shadow' version '5.2.0'
+    id 'project-report'
 }
 
 shadowJar {
@@ -33,6 +34,7 @@ sourceSets {
 repositories {
     mavenLocal()
     jcenter()
+    mavenCentral()
 
     maven {
         url "https://packages.confluent.io/maven"
@@ -76,7 +78,7 @@ dependencies {
     implementation("io.prometheus:simpleclient_common:0.8.1")
 
     // ORM Framework
-    implementation "org.jetbrains.exposed:exposed:0.17.6"
+    implementation "org.jetbrains.exposed:exposed-core:0.45.0"
 
     implementation("no.nav.sf.library:crm-utilities:0.109")
 
