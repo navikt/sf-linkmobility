@@ -14,7 +14,7 @@ object Application {
 
     fun basicAuthFilter(expectedUsername: String = username, expectedPassword: String = password): Filter = Filter { next ->
         {
-            val credentials = it.header("Authorization")?.removePrefix("Basic")?.fromBase64()?.split(":")
+            val credentials = it.header("Authorization")?.removePrefix("Basic")?.trim()?.fromBase64()?.split(":")
             if (credentials?.size == 2 && credentials[0] == expectedUsername && credentials[1] == expectedPassword) {
                 next(it)
             } else {
