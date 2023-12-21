@@ -44,8 +44,8 @@ class DefaultAccessTokenHandler : AccessTokenHandler {
     private val SFTokenHost = System.getenv("SF_TOKENHOST")
     private val SFClientID = System.getenv("SFClientID")
     private val SFUsername = System.getenv("SFUsername")
-    private val keystoreB64 = System.getenv("KeystoreJKSB64")
-    private val keystorePassword = System.getenv("keystorePassword")
+    private val keystoreB64 = System.getenv("keystoreJKSB64")
+    private val keystorePassword = System.getenv("KeystorePassword")
     private val privateKeyAlias = System.getenv("PrivateKeyAlias")
     private val privateKeyPassword = System.getenv("PrivateKeyPassword")
 
