@@ -6,11 +6,11 @@ metadata:
   labels:
     team: teamcrm
 spec:
-  image: "{{ image }}"
+  image: {{ image }}
   port: 8080
   replicas:
     min: 2
-    max: 2
+    max: 3
   liveness:
     path: /internal/is_alive
     initialDelay: 5
@@ -21,15 +21,17 @@ spec:
     initialDelay: 5
     periodSeconds: 5
     failureThreshold: 30
-  resources:
-    limits:
-      memory: 1Gi
-    requests:
-      cpu: 10m
-      memory: 256Mi
   prometheus:
     enabled: true
     path: /internal/prometheus
+  resources:
+    limits:
+      memory: 2Gi
+    requests:
+      cpu: 10m
+      memory: 256Mi
+  envFrom:
+    - secret: sf-linkmobility
   ingresses:
     - "https://linkmobility.nav.no"
   accessPolicy:
@@ -37,18 +39,8 @@ spec:
       external:
         - host: login.salesforce.com
         - host: navdialog.my.salesforce.com
-  envFrom:
-    - secret: sf-linkmobility
   env:
-    - name: KTOR_ENV
-      value: production
-    - name: MS_BETWEEN_WORK
-      value: '600000'
-    - name: VAULT_INSTANCE
-      value: GCP
-    - name: SF_INSTANCE
-      value: PRODUCTION
     - name: SF_TOKENHOST
-      value: 'https://login.salesforce.com'
+      value: 'https://login.salesforce.com/services/oauth2/token'
     - name: SF_VERSION
-      value: 'v48.0'
+      value: 'v57.0'

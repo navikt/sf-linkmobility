@@ -1,10 +1,7 @@
 # Intellij
-/.gradle
-/.idea
-/out
-/build
+.idea/
+build/
 *.iml
-*.ipr
 *.iws
 
 # Mac
@@ -18,10 +15,6 @@ target/
 .gradle/
 out/
 
-Scratch*
-
-# misc
-.*.sw?
-*.vim
-TAGS
-tags
+#Scratch
+Scratch*.kt
+msg*.txt
