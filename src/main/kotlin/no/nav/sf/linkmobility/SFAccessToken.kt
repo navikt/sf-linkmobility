@@ -8,6 +8,7 @@ import org.http4k.client.ApacheClient
 import org.http4k.core.Method
 import org.http4k.core.Request
 import org.http4k.core.Status
+import java.io.File
 import java.security.KeyStore
 import java.security.PrivateKey
 
@@ -72,11 +73,15 @@ fun fetchAccessTokenAndInstanceUrl(): Pair<String, String> {
 
     for (retry in 1..4) {
         try {
+            File("/tmp/accessTokenRequest").writeText(accessTokenRequest.toMessage())
             val response = httpClient(accessTokenRequest)
+            File("/tmp/accessTokenResponse").writeText(response.toMessage())
 
             if (response.status == Status.OK) {
                 val accessTokenResponse = gson.fromJson(response.bodyString(), AccessToken::class.java)!!
                 return Pair(accessTokenResponse.access_token, accessTokenResponse.instance_url)
+            } else {
+                log.warn { "Access token call failed at attempt $retry : ${response.toMessage()}" }
             }
         } catch (e: Exception) {
             log.error("Attempt to fetch access no.nav.sf.linkmobility.token $retry of 3 failed by ${e.message} stack: ${e.printStackTrace()}}")
