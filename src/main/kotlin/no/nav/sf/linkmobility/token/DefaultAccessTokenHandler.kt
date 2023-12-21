@@ -10,7 +10,6 @@ import org.http4k.client.ApacheClient
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method
 import org.http4k.core.Request
-import org.http4k.core.Response
 import org.http4k.core.body.toBody
 import java.io.File
 import java.security.KeyStore
