@@ -12,6 +12,7 @@ import org.http4k.core.Method
 import org.http4k.core.Request
 import org.http4k.core.Response
 import org.http4k.core.body.toBody
+import java.io.File
 import java.security.KeyStore
 import java.security.PrivateKey
 
@@ -93,8 +94,9 @@ class DefaultAccessTokenHandler : AccessTokenHandler {
 
         for (retry in 1..4) {
             try {
-                lateinit var response: Response
-                response = client.value(accessTokenRequest)
+                File("/tmp/accessTokenRequest").writeText(accessTokenRequest.toMessage())
+                val response = client.value(accessTokenRequest)
+                File("/tmp/accessTokenResponse").writeText(response.toMessage())
                 if (response.status.code == 200) {
                     val accessTokenResponse = gson.fromJson(response.bodyString(), AccessTokenResponse::class.java)
                     lastTokenPair = Pair(accessTokenResponse.access_token, accessTokenResponse.instance_url)
