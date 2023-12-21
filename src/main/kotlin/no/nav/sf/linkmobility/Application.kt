@@ -16,7 +16,7 @@ class Application(val accessTokenHandler: AccessTokenHandler = DefaultAccessToke
     fun start() {
         log.info { "Starting app" }
         naisAPIServer(8080).start()
-        // refreshLoop() On high traffic this can make sure access token is always ready to go
+        // refreshLoop() // Not necessary - but could prefetch if desired
     }
 
     tailrec fun refreshLoop() {

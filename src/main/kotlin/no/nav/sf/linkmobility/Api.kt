@@ -37,7 +37,7 @@ fun naisAPI(): HttpHandler = routes(
         File("/tmp/latestresponse").writeText(response.toMessage())
         response
     },
-    "/api/at" bind Method.GET to { Response(Status.OK).body(application.accessTokenHandler.accessToken) },
+    // "/api/at" bind Method.GET to { Response(Status.OK).body(application.accessTokenHandler.accessToken) },
     "/internal/is_alive" bind Method.GET to { Response(Status.OK) },
     "/internal/is_ready" bind Method.GET to { Response(Status.OK) },
     "/internal/prometheus" bind Method.GET to {
