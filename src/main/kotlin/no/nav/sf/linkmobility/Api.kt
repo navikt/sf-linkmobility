@@ -2,7 +2,7 @@ package no.nav.sf.linkmobility
 
 import io.prometheus.client.exporter.common.TextFormat
 import mu.KotlinLogging
-import no.nav.sf.linkmobility.Application.basicAuthFilter
+import org.http4k.core.Filter
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method
 import org.http4k.core.Request
@@ -26,20 +26,18 @@ fun naisAPI(): HttpHandler = routes(
         log.info { "Authorized call to /api/sms" }
         workMetrics.requestCount.inc()
 
-        val accessTokenAndInstanceUrl = fetchAccessTokenAndInstanceUrl()
-
-        val uri = "${accessTokenAndInstanceUrl.second}/services/apexrest/receiveSMS"
+        val uri = "${application.accessTokenHandler.instanceUrl}/services/apexrest/receiveSMS"
 
         val request = Request(Method.POST, uri)
-            .header("Authorization", "Bearer ${accessTokenAndInstanceUrl.first}")
+            .header("Authorization", "Bearer ${application.accessTokenHandler.accessToken}")
             .body(r.body)
 
         File("/tmp/latestrequest").writeText(request.toMessage())
-        val response = httpClient(request)
+        val response = application.httpClient(request)
         File("/tmp/latestresponse").writeText(response.toMessage())
         response
     },
-    "/api/at" bind Method.GET to { Response(Status.OK).body(fetchAccessTokenAndInstanceUrl().toString()) },
+    "/api/at" bind Method.GET to { Response(Status.OK).body(application.accessTokenHandler.accessToken) },
     "/internal/is_alive" bind Method.GET to { Response(Status.OK) },
     "/internal/is_ready" bind Method.GET to { Response(Status.OK) },
     "/internal/prometheus" bind Method.GET to {
@@ -56,6 +54,19 @@ fun naisAPI(): HttpHandler = routes(
             .responseByContent()
     }
 )
+
+fun basicAuthFilter(expectedUsername: String = System.getenv("username"), expectedPassword: String = System.getenv("password")): Filter = Filter { next ->
+    {
+        val credentials = it.header("Authorization")?.removePrefix("Basic")?.trim()?.fromBase64()?.split(":")
+        if (credentials?.size == 2 && credentials[0] == expectedUsername && credentials[1] == expectedPassword) {
+            next(it)
+        } else {
+            Response(Status.UNAUTHORIZED).header("WWW-Authenticate", "Basic realm=\"Restricted Area\"")
+        }
+    }
+}
+
+fun String.fromBase64(): String = String(java.util.Base64.getDecoder().decode(this))
 
 private fun String.responseByContent(): Response =
     if (this.isNotEmpty()) Response(Status.OK).body(this) else Response(Status.NO_CONTENT)

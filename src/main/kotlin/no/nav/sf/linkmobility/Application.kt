@@ -1,34 +1,29 @@
 package no.nav.sf.linkmobility
 
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
-import org.http4k.core.Filter
-import org.http4k.core.Response
-import org.http4k.core.Status.Companion.UNAUTHORIZED
+import no.nav.sf.linkmobility.token.AccessTokenHandler
+import no.nav.sf.linkmobility.token.DefaultAccessTokenHandler
+import org.http4k.client.ApacheClient
 
 private val log = KotlinLogging.logger { }
 
-object Application {
+class Application(val accessTokenHandler: AccessTokenHandler = DefaultAccessTokenHandler()) {
 
-    val username = System.getenv("username")
-    val password = System.getenv("password")
-
-    fun basicAuthFilter(expectedUsername: String = username, expectedPassword: String = password): Filter = Filter { next ->
-        {
-            val credentials = it.header("Authorization")?.removePrefix("Basic")?.trim()?.fromBase64()?.split(":")
-            if (credentials?.size == 2 && credentials[0] == expectedUsername && credentials[1] == expectedPassword) {
-                next(it)
-            } else {
-                Response(UNAUTHORIZED).header("WWW-Authenticate", "Basic realm=\"Restricted Area\"")
-            }
-        }
-    }
-
-    fun String.fromBase64(): String = String(java.util.Base64.getDecoder().decode(this))
-
-    var accessToken: AccessToken = AccessToken("", "", "", "", "", "0", "") // Accesstoken at epoch
+    val httpClient = ApacheClient()
 
     fun start() {
         log.info { "Starting app" }
         naisAPIServer(8080).start()
+        // refreshLoop() On high traffic this can make sure access token is always ready to go
+    }
+
+    tailrec fun refreshLoop() {
+        runBlocking { delay(60000) } // 1 min
+        accessTokenHandler.refreshToken()
+        runBlocking { delay(900000) } // 15 min
+
+        refreshLoop()
     }
 }

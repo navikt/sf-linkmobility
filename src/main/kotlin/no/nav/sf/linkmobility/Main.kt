@@ -1,3 +1,5 @@
 package no.nav.sf.linkmobility
 
-fun main() = Application.start()
+val application = Application()
+
+fun main() = application.start()
