@@ -12,7 +12,6 @@ import org.http4k.core.Method
 import org.http4k.core.Request
 import org.http4k.core.Response
 import org.http4k.core.body.toBody
-import java.io.File
 import java.security.KeyStore
 import java.security.PrivateKey
 
@@ -42,13 +41,13 @@ class DefaultAccessTokenHandler : AccessTokenHandler {
 
     private val log = KotlinLogging.logger { }
 
-    private val SFTokenHost: Lazy<String> = lazy { System.getenv("SF_TOKENHOST") }
-    private val SFClientID = fetchVaultValue("SFClientID")
-    private val SFUsername = fetchVaultValue("SFUsername")
-    private val keystoreB64 = fetchVaultValue("KeystoreJKSB64")
-    private val keystorePassword = fetchVaultValue("KeystorePassword")
-    private val privateKeyAlias = fetchVaultValue("PrivateKeyAlias")
-    private val privateKeyPassword = fetchVaultValue("PrivateKeyPassword")
+    private val SFTokenHost = System.getenv("SF_TOKENHOST")
+    private val SFClientID = System.getenv("SFClientID")
+    private val SFUsername = System.getenv("SFUsername")
+    private val keystoreB64 = System.getenv("KeystoreJKSB64")
+    private val keystorePassword = System.getenv("KeystorePassword")
+    private val privateKeyAlias = System.getenv("PrivateKeyAlias")
+    private val privateKeyPassword = System.getenv("PrivateKeyPassword")
 
     private val client: Lazy<HttpHandler> = lazy { ApacheClient() }
 
@@ -60,11 +59,6 @@ class DefaultAccessTokenHandler : AccessTokenHandler {
 
     private var expireTime = System.currentTimeMillis()
 
-    private fun fetchVaultValue(vaultKey: String): String {
-        val vaultPath = "/var/run/secrets/nais.io/vault"
-        return File("$vaultPath/$vaultKey").readText(Charsets.UTF_8)
-    }
-
     private fun fetchAccessTokenAndInstanceUrl(): Pair<String, String> {
         if (System.currentTimeMillis() < expireTime) {
             log.debug { "Using cached access token (${(expireTime - System.currentTimeMillis()) / 60000} min left)" }
@@ -73,7 +67,7 @@ class DefaultAccessTokenHandler : AccessTokenHandler {
         val expireMomentSinceEpochInSeconds = (System.currentTimeMillis() / 1000) + expTimeSecondsClaim
         val claim = JWTClaim(
             iss = SFClientID,
-            aud = SFTokenHost.value,
+            aud = SFTokenHost,
             sub = SFUsername,
             exp = expireMomentSinceEpochInSeconds.toString()
         )
@@ -88,7 +82,7 @@ class DefaultAccessTokenHandler : AccessTokenHandler {
         }.${gson.toJson(claim).encodeB64UrlSafe()}"
         val fullClaimSignature = privateKey.sign(claimWithHeaderJsonUrlSafe.toByteArray())
 
-        val accessTokenRequest = Request(Method.POST, SFTokenHost.value)
+        val accessTokenRequest = Request(Method.POST, SFTokenHost)
             .header("Content-Type", "application/x-www-form-urlencoded")
             .body(
                 listOf(
