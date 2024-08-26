@@ -16,6 +16,8 @@ import org.http4k.server.Http4kServer
 import org.http4k.server.asServer
 import java.io.File
 import java.io.StringWriter
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 private val log = KotlinLogging.logger { }
 
@@ -32,9 +34,17 @@ fun naisAPI(): HttpHandler = routes(
             .header("Authorization", "Bearer ${application.accessTokenHandler.accessToken}")
             .body(r.body)
 
-        File("/tmp/latestrequest").writeText(request.toMessage())
         val response = application.httpClient(request)
-        File("/tmp/latestresponse").writeText(response.toMessage())
+        File("/tmp/latestforward").writeText(
+            LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME) +
+                "\n\n" +
+                request.toMessage() +
+                "\n\n" +
+                response.toMessage()
+        )
+        if (response.status.code == 500) {
+            log.error { "Failed to handle sms. Input: \n ${request.bodyString()} \n\n 500 Response: \n ${response.bodyString()}" }
+        }
         response
     },
     // "/api/at" bind Method.GET to { Response(Status.OK).body(application.accessTokenHandler.accessToken) },
