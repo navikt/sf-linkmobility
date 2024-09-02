@@ -35,7 +35,7 @@ fun naisAPI(): HttpHandler = routes(
             .body(r.body)
 
         val response = application.httpClient(request)
-        File("/tmp/latestforward").writeText(
+        File("/tmp/latestforward-${response.status.code}").writeText(
             LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME) +
                 "\n\n" +
                 request.toMessage() +
@@ -43,7 +43,9 @@ fun naisAPI(): HttpHandler = routes(
                 response.toMessage()
         )
         if (response.status.code == 500) {
-            log.error { "Failed to handle sms. Input: \n ${request.bodyString()} \n\n 500 Response: \n ${response.bodyString()}" }
+            log.error { "Sms call made to Salesforce with response code 500. Parse error in Salesforce?" }
+        } else {
+            log.info { "Sms call made to Salesforce with response code ${response.status} " }
         }
         response
     },
