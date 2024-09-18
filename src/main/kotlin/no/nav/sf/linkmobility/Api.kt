@@ -47,6 +47,7 @@ fun naisAPI(): HttpHandler = routes(
         } else {
             log.info { "Sms call made to Salesforce with response code ${response.status} " }
         }
+        workMetrics.responseCount.labels(response.status.code.toString()).inc()
         response
     },
     // "/api/at" bind Method.GET to { Response(Status.OK).body(application.accessTokenHandler.accessToken) },

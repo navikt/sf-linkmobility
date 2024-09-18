@@ -1,16 +1,10 @@
 package no.nav.sf.linkmobility
 
-import io.prometheus.client.Gauge
+import io.prometheus.client.Counter
 
 data class WMetrics(
-    val requestCount: Gauge = Metrics.registerGauge("request_count"),
-    val tokenRefreshCount: Gauge = Metrics.registerGauge("token_refresh_count"),
-    val issues: Gauge = Metrics.registerGauge("issues")
-) {
-    fun clearAll() {
-        requestCount.clear()
-        issues.clear()
-    }
-}
+    val requestCount: Counter = Metrics.registerCounter("requests"),
+    val responseCount: Counter = Metrics.registerLabelCounter("responses", "status_code")
+)
 
 val workMetrics = WMetrics()
