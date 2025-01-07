@@ -18,7 +18,7 @@ repositories {
 
 jar {
     manifest {
-        attributes 'Main-Class': 'no.nav.sf.linkmobility.MainKt'
+        attributes 'Main-Class': 'no.nav.sf.linkmobility.BootstrapKt'
     }
 }
 
@@ -28,7 +28,7 @@ shadowJar {
 }
 
 application {
-    mainClassName = 'no.nav.sf.linkmobility.MainKt'
+    mainClassName = 'no.nav.sf.linkmobility.BootstrapKt'
 }
 
 configurations {

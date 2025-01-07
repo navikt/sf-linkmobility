@@ -1,17 +1,18 @@
 package no.nav.sf.linkmobility
 
-import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.Counter
 import io.prometheus.client.hotspot.DefaultExports
 import mu.KotlinLogging
 
 object Metrics {
     private val log = KotlinLogging.logger { }
-    val cRegistry: CollectorRegistry = CollectorRegistry.defaultRegistry
 
-    fun registerCounter(name: String): Counter = Counter.build().name(name).help(name).register()
+    val requestCount: Counter = Metrics.registerCounter("requests")
+    val responseCount: Counter = Metrics.registerLabelCounter("responses", "status_code")
 
-    fun registerLabelCounter(name: String, vararg labels: String): Counter =
+    private fun registerCounter(name: String): Counter = Counter.build().name(name).help(name).register()
+
+    private fun registerLabelCounter(name: String, vararg labels: String): Counter =
         Counter.build().name(name).help(name).labelNames(*labels).register()
 
     init {
