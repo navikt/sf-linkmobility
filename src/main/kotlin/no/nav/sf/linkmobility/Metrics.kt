@@ -7,8 +7,8 @@ import mu.KotlinLogging
 object Metrics {
     private val log = KotlinLogging.logger { }
 
-    val requestCount: Counter = Metrics.registerCounter("requests")
-    val responseCount: Counter = Metrics.registerLabelCounter("responses", "status_code")
+    val requestCount: Counter = registerCounter("requests")
+    val responseCount: Counter = registerLabelCounter("responses", "status_code")
 
     private fun registerCounter(name: String): Counter = Counter.build().name(name).help(name).register()
 
