@@ -2,9 +2,9 @@ apiVersion: "nais.io/v1alpha1"
 kind: "Application"
 metadata:
   name: sf-linkmobility
-  namespace: teamcrm
+  namespace: hot-crm
   labels:
-    team: teamcrm
+    team: hot-crm
 spec:
   image: {{ image }}
   port: 8080
@@ -31,9 +31,9 @@ spec:
       memory: 256Mi
   envFrom:
     - secret: sf-linkmobility
-#  ingresses:
-#    - "https://linkmobility.ekstern.dev.nav.no"
-#    - "https://linkmobility.intern.dev.nav.no"
+  ingresses:
+    - "https://linkmobility.ekstern.dev.nav.no"
+    - "https://linkmobility.intern.dev.nav.no"
   accessPolicy:
     outbound:
       external:
