@@ -25,7 +25,7 @@ import java.time.format.DateTimeFormatter
 
 private val log = KotlinLogging.logger { }
 
-class Application(val accessTokenHandler: AccessTokenHandler = DefaultAccessTokenHandler()) {
+class Application(private val accessTokenHandler: AccessTokenHandler = DefaultAccessTokenHandler()) {
 
     val httpClient = ApacheClient()
 
@@ -61,13 +61,13 @@ class Application(val accessTokenHandler: AccessTokenHandler = DefaultAccessToke
         log.info { "Authorized call to /api/sms" }
         Metrics.requestCount.inc()
 
-        val uri = "${application.accessTokenHandler.instanceUrl}/services/apexrest/receiveSMS"
+        val uri = "${accessTokenHandler.instanceUrl}/services/apexrest/receiveSMS"
 
         val request = Request(Method.POST, uri)
-            .header("Authorization", "Bearer ${application.accessTokenHandler.accessToken}")
+            .header("Authorization", "Bearer ${accessTokenHandler.accessToken}")
             .body(r.body)
 
-        val response = application.httpClient(request)
+        val response = httpClient(request)
         File("/tmp/latestforward-${response.status.code}").writeText(
             LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME) +
                 "\n\n" +
