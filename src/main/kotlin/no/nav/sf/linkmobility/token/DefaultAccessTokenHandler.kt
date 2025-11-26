@@ -4,14 +4,20 @@ import com.google.gson.Gson
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
-import org.apache.commons.codec.binary.Base64.decodeBase64
-import org.apache.commons.codec.binary.Base64.encodeBase64URLSafeString
-import org.http4k.client.ApacheClient
+import no.nav.sf.linkmobility.config_SF_TOKENHOST
+import no.nav.sf.linkmobility.env
+import no.nav.sf.linkmobility.secret_KEYSTORE_JKS_B64
+import no.nav.sf.linkmobility.secret_KEYSTORE_PASSWORD
+import no.nav.sf.linkmobility.secret_PRIVATE_KEY_ALIAS
+import no.nav.sf.linkmobility.secret_PRIVATE_KEY_PASSWORD
+import no.nav.sf.linkmobility.secret_SF_CLIENT_ID
+import no.nav.sf.linkmobility.secret_SF_USERNAME
+import org.http4k.client.OkHttp
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method
 import org.http4k.core.Request
+import org.http4k.core.Response
 import org.http4k.core.body.toBody
-import java.io.File
 import java.security.KeyStore
 import java.security.PrivateKey
 
@@ -21,13 +27,6 @@ import java.security.PrivateKey
  *
  * Fetches and caches access token, also retrieves instance url
  */
-interface AccessTokenHandler {
-    val accessToken: String
-    val instanceUrl: String
-
-    fun refreshToken()
-}
-
 class DefaultAccessTokenHandler : AccessTokenHandler {
     override val accessToken get() = fetchAccessTokenAndInstanceUrl().first
     override val instanceUrl get() = fetchAccessTokenAndInstanceUrl().second
@@ -41,21 +40,21 @@ class DefaultAccessTokenHandler : AccessTokenHandler {
 
     private val log = KotlinLogging.logger { }
 
-    private val SFTokenHost = System.getenv("SF_TOKENHOST")
-    private val SFClientID = System.getenv("SFClientID")
-    private val SFUsername = System.getenv("SFUsername")
-    private val keystoreB64 = System.getenv("keystoreJKSB64")
-    private val keystorePassword = System.getenv("KeystorePassword")
-    private val privateKeyAlias = System.getenv("PrivateKeyAlias")
-    private val privateKeyPassword = System.getenv("PrivateKeyPassword")
+    private val sfTokenHost = env(config_SF_TOKENHOST)
+    private val sfClientID = env(secret_SF_CLIENT_ID)
+    private val sfUsername = env(secret_SF_USERNAME)
+    private val keystoreB64 = env(secret_KEYSTORE_JKS_B64)
+    private val keystorePassword = env(secret_KEYSTORE_PASSWORD)
+    private val privateKeyAlias = env(secret_PRIVATE_KEY_ALIAS)
+    private val privateKeyPassword = env(secret_PRIVATE_KEY_PASSWORD)
 
-    private val client: Lazy<HttpHandler> = lazy { ApacheClient() }
+    private val client: HttpHandler = OkHttp()
 
     private val gson = Gson()
 
     private val expTimeSecondsClaim = 3600 // 60 min - expire time for the access token we ask salesforce for
 
-    private var lastTokenPair = Pair("", "")
+    private var lastTokenPair = "" to ""
 
     private var expireTime = System.currentTimeMillis()
 
@@ -65,40 +64,41 @@ class DefaultAccessTokenHandler : AccessTokenHandler {
             return lastTokenPair
         }
         val expireMomentSinceEpochInSeconds = (System.currentTimeMillis() / 1000) + expTimeSecondsClaim
-        val claim = JWTClaim(
-            iss = SFClientID,
-            aud = SFTokenHost,
-            sub = SFUsername,
-            exp = expireMomentSinceEpochInSeconds.toString()
-        )
-        val privateKey = PrivateKeyFromBase64Store(
-            ksB64 = keystoreB64,
-            ksPwd = keystorePassword,
-            pkAlias = privateKeyAlias,
-            pkPwd = privateKeyPassword
-        )
+        val claim =
+            JWTClaim(
+                iss = sfClientID,
+                aud = sfTokenHost,
+                sub = sfUsername,
+                exp = expireMomentSinceEpochInSeconds.toString(),
+            )
+        val privateKey =
+            privateKeyFromBase64Store(
+                ksB64 = keystoreB64,
+                ksPwd = keystorePassword,
+                pkAlias = privateKeyAlias,
+                pkPwd = privateKeyPassword,
+            )
         val claimWithHeaderJsonUrlSafe = "${
-        gson.toJson(JWTClaimHeader("RS256")).encodeB64UrlSafe()
+            gson.toJson(JWTClaimHeader("RS256")).encodeB64UrlSafe()
         }.${gson.toJson(claim).encodeB64UrlSafe()}"
         val fullClaimSignature = privateKey.sign(claimWithHeaderJsonUrlSafe.toByteArray())
 
-        val accessTokenRequest = Request(Method.POST, SFTokenHost)
-            .header("Content-Type", "application/x-www-form-urlencoded")
-            .body(
-                listOf(
-                    "grant_type" to "urn:ietf:params:oauth:grant-type:jwt-bearer",
-                    "assertion" to "$claimWithHeaderJsonUrlSafe.$fullClaimSignature"
-                ).toBody()
-            )
+        val accessTokenRequest =
+            Request(Method.POST, sfTokenHost)
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .body(
+                    listOf(
+                        "grant_type" to "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                        "assertion" to "$claimWithHeaderJsonUrlSafe.$fullClaimSignature",
+                    ).toBody(),
+                )
 
         for (retry in 1..4) {
             try {
-                File("/tmp/accessTokenRequest").writeText(accessTokenRequest.toMessage())
-                val response = client.value(accessTokenRequest)
-                File("/tmp/accessTokenResponse").writeText(response.toMessage())
+                val response: Response = client(accessTokenRequest)
                 if (response.status.code == 200) {
                     val accessTokenResponse = gson.fromJson(response.bodyString(), AccessTokenResponse::class.java)
-                    lastTokenPair = Pair(accessTokenResponse.access_token, accessTokenResponse.instance_url)
+                    lastTokenPair = accessTokenResponse.access_token to accessTokenResponse.instance_url
                     expireTime = (expireMomentSinceEpochInSeconds - 10) * 1000
                     return lastTokenPair
                 }
@@ -108,44 +108,62 @@ class DefaultAccessTokenHandler : AccessTokenHandler {
             }
         }
         log.error("Attempt to fetch access token given up")
-        return Pair("", "")
+        return "" to ""
     }
 
-    private fun PrivateKeyFromBase64Store(ksB64: String, ksPwd: String, pkAlias: String, pkPwd: String): PrivateKey {
-        return KeyStore.getInstance("JKS").apply { load(ksB64.decodeB64().inputStream(), ksPwd.toCharArray()) }.run {
+    private fun privateKeyFromBase64Store(
+        ksB64: String,
+        ksPwd: String,
+        pkAlias: String,
+        pkPwd: String,
+    ): PrivateKey =
+        KeyStore.getInstance("JKS").apply { load(ksB64.decodeB64().inputStream(), ksPwd.toCharArray()) }.run {
             getKey(pkAlias, pkPwd.toCharArray()) as PrivateKey
         }
-    }
 
-    private fun PrivateKey.sign(data: ByteArray): String {
-        return this.let {
-            java.security.Signature.getInstance("SHA256withRSA").apply {
-                initSign(it)
-                update(data)
-            }.run {
-                sign().encodeB64()
-            }
+    private fun PrivateKey.sign(data: ByteArray): String =
+        this.let {
+            java.security.Signature
+                .getInstance("SHA256withRSA")
+                .apply {
+                    initSign(it)
+                    update(data)
+                }.run {
+                    sign().encodeB64UrlSafe()
+                }
         }
-    }
 
-    private fun ByteArray.encodeB64(): String = encodeBase64URLSafeString(this)
-    private fun String.decodeB64(): ByteArray = decodeBase64(this)
-    private fun String.encodeB64UrlSafe(): String = encodeBase64URLSafeString(this.toByteArray())
+    private fun ByteArray.encodeB64UrlSafe(): String =
+        String(
+            java.util.Base64
+                .getUrlEncoder()
+                .withoutPadding()
+                .encode(this),
+        )
+
+    private fun String.decodeB64(): ByteArray =
+        java.util.Base64
+            .getMimeDecoder()
+            .decode(this)
+
+    private fun String.encodeB64UrlSafe(): String = this.toByteArray(Charsets.UTF_8).encodeB64UrlSafe()
 
     private data class JWTClaim(
         val iss: String,
         val aud: String,
         val sub: String,
-        val exp: String
+        val exp: String,
     )
 
-    private data class JWTClaimHeader(val alg: String)
+    private data class JWTClaimHeader(
+        val alg: String,
+    )
 
     private data class AccessTokenResponse(
         val access_token: String,
         val scope: String,
         val instance_url: String,
         val id: String,
-        val token_type: String
+        val token_type: String,
     )
 }

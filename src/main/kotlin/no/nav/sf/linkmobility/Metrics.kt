@@ -10,10 +10,23 @@ object Metrics {
     val requestCount: Counter = registerCounter("requests")
     val responseCount: Counter = registerLabelCounter("responses", "status_code")
 
-    private fun registerCounter(name: String): Counter = Counter.build().name(name).help(name).register()
+    private fun registerCounter(name: String): Counter =
+        Counter
+            .build()
+            .name(name)
+            .help(name)
+            .register()
 
-    private fun registerLabelCounter(name: String, vararg labels: String): Counter =
-        Counter.build().name(name).help(name).labelNames(*labels).register()
+    private fun registerLabelCounter(
+        name: String,
+        vararg labels: String,
+    ): Counter =
+        Counter
+            .build()
+            .name(name)
+            .help(name)
+            .labelNames(*labels)
+            .register()
 
     init {
         DefaultExports.initialize()
