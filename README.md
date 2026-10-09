@@ -1,4 +1,4 @@
-# sf-linkmobility# sf-linkmobility
+# sf-linkmobility
 
 En liten Kotlin-tjeneste som fungerer som proxy mellom [LINK Mobility](https://www.linkmobility.com/) og Salesforce.
 
